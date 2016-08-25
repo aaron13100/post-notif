@@ -1,0 +1,6 @@
+
+* allow the admin to edit all user data directly - name, confirmed y/n, email address, categories.
+
+* send an email automatically when a new post is posted.
+
+* use shortcodes instead of @@

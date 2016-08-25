@@ -266,6 +266,30 @@ class Post_Notif_Admin {
 		);  
 
 	}
+
+	/**
+	 * Extract our own post excerpt using the post content.
+	 *
+	 * @since	1.0.0 custom
+	 *	@return	the first X words of the post content.
+	 */	
+	function get_excerpt_by_id($post_id){
+	    $the_post = get_post($post_id); //Gets post ID
+	    $the_excerpt = $the_post->post_content; //Gets post_content to be used as a basis for the excerpt
+	    $excerpt_length = 55; //Sets excerpt length by word count
+	    $the_excerpt = strip_tags(strip_shortcodes($the_excerpt)); //Strips tags and images
+
+	    $words = explode(' ', $the_excerpt, $excerpt_length + 1);
+
+	    if(count($words) > $excerpt_length) :
+	        array_pop($words);
+	        array_push($words, '…');
+	        $the_excerpt = implode(' ', $words);
+	    endif;
+
+	    return $the_excerpt;
+	}   
+	
 	
 	/**
 	 * Handle AJAX event sent when "Send Notif" button (in meta box on Edit Post page) is pressed.
@@ -361,8 +385,14 @@ class Post_Notif_Admin {
    				// Get post title, excerpt, and author's name
    				$post_attribs = get_post( $post_id ); 
    				$post_title = $post_attribs->post_title;
-				$post_excerpt = $post_attribs->post_excerpt;
+
+   				// prefer the manual post excerpt, then create one using the post content.
+   				$post_excerpt = $post_attribs->post_excerpt;
+				if ($post_excerpt == '') {
+					$post_excerpt = $this->get_excerpt_by_id($post_id);
+				}
 				
+   				$post_date = $post_attribs->post_date;
    				$post_author_data = get_userdata( $post_attribs->post_author );
    				$post_author = $post_author_data->display_name;
    		
@@ -373,6 +403,7 @@ class Post_Notif_Admin {
    				$post_notif_email_subject = $post_notif_options_arr['post_notif_eml_subj'];
    				$post_notif_email_subject = str_replace( '@@blogname', get_bloginfo('name'), $post_notif_email_subject );
    				$post_notif_email_subject = str_replace( '@@posttitle', $post_title, $post_notif_email_subject );
+   				$post_notif_email_subject = str_replace( '@@postdate', $post_date, $post_notif_email_subject );
     			$post_notif_email_subject = str_replace( '@@postauthor', $post_author, $post_notif_email_subject );
 
    				// Tell PHP mail() to convert both double and single quotes from their respective HTML entities to their applicable characters
@@ -381,6 +412,7 @@ class Post_Notif_Admin {
    				$post_notif_email_body_template = $post_notif_options_arr['post_notif_eml_body'];
    				$post_notif_email_body_template = str_replace( '@@blogname', get_bloginfo('name'), $post_notif_email_body_template );
    				$post_notif_email_body_template = str_replace( '@@posttitle', $post_title, $post_notif_email_body_template );
+   				$post_notif_email_body_template = str_replace( '@@postdate', $post_date, $post_notif_email_body_template );
    				$post_notif_email_body_template = str_replace( '@@postauthor', $post_author, $post_notif_email_body_template );
    				$post_notif_email_body_template = str_replace( '@@permalinkurl', $post_permalink, $post_notif_email_body_template );
    				$post_notif_email_body_template = str_replace( '@@permalink', '<a href="' . $post_permalink . '">' . $post_permalink . '</a>', $post_notif_email_body_template );
@@ -439,8 +471,7 @@ class Post_Notif_Admin {
     	wp_die(); 
    	
     }
-   
-	
+
 	// Functions related to adding Post Notif submenu to Settings menu
 	
 	/**
